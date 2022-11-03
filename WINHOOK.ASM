@@ -51,6 +51,10 @@ sBegin Code
 assumes cs,Code
 assumes ds,Data
 
+;
+;	HookInit: Determines if several protected mode-specific procedures exist and switches them for
+;			a dummy function if not
+;
 cProc HookInit,<NEAR,PUBLIC,WIN,PASCAL>,<>
 cBegin
 	mov ax,word ptr [winMods].KERNEL
@@ -107,17 +111,16 @@ HI_noFS:
 	mov word ptr FreeSelector,offset CodeDataDummy
 
 HI_contFS:
-	mov ax,1
 cEnd
 
 ;
-; WORD FAR PASCAL HookProc(LPSTR, LPSTR, FARPROC, FARPROC FAR *);
-;	LPSTR moduleName: The name of the library to hook
-;	LPSTR procName: The name of the procedure to hook
-;	FARPROC hookProc: The procedure to call instead
-;	FARPROC FAR *oldProc: If not null, where to store the old function pointer
-;	returns WORD: An ID to be used with other methods here
-;		on failure: 0 is returned
+;	HookProc: Hooks a WinAPI procedure to call the specified function instead
+;	Params:
+;		module - the handle for the module to hook
+;		procName - pointer to the name of the procedure to hook
+;		hookProc - pointer to the procedure to call instead
+;		oldProc - if not NULL, where to store the old function pointer
+;	Returns: An ID to be used with UnhookProc, 0 on failure
 ;
 cProc HookProc,<NEAR,PUBLIC,WIN,PASCAL>,<si,di,ds>
 	parmW module
@@ -244,8 +247,9 @@ HP_exit:
 cEnd
 
 ;
-; void FAR PASCAL UnhookProc(WORD);
-;	WORD hookedProc: Return value of previous call to HookProc()
+;	UnhookProc: Restores a WinAPI procedure to its original state
+;	Params:
+;		hookedProc - Return value of previous call to HookProc
 ;
 cProc UnhookProc,<NEAR,PUBLIC,WIN,PASCAL>,<si,di>
 	parmW hookedProc
@@ -291,6 +295,10 @@ cBegin
 	mov ax,segToReturn
 cEnd
 
+;
+;	CallOldProc: Switches back patched bytes to the original ones, calls the old procedure, and
+;			re-patches it
+;
 CallOldProc	proc far
 
 	; Since we used far call to get here, there is a return address on the
