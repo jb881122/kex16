@@ -44,6 +44,7 @@ Currently, this project is focused on making programs built for Windows 3.0 run 
 
 ## File List
 
+- `.gitignore`: Tells git not to include output files
 - `README.MD`: This documentation
 - `LICENSE`: MIT License
 - `KEX16`: Makefile for building
