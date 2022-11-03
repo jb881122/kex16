@@ -1,0 +1,24 @@
+CC = cl -d -c -AS -Gsw -Os -Zpe
+AS = masm -z-t-Ml-b63-I$(INCLUDE)
+
+kex16.obj: kex16.c kex16.h
+	$(CC) kex16.c
+
+winhook.obj: winhook.asm
+	$(AS) winhook;
+
+llist.obj: llist.asm
+	$(AS) llist;
+
+osflags.obj: osflags.c kex16.h
+	$(CC) osflags.c
+
+onload.obj: onload.c kex16.h
+	$(CC) onload.c
+
+lbitem.obj: lbitem.c kex16.h
+	$(CC) lbitem.c
+
+kex16.exe: kex16.def kex16.obj winhook.obj llist.obj osflags.obj onload.obj lbitem.obj
+    link4 kex16 winhook llist osflags onload lbitem, kex16/al:16, , slibw swinlibc/NOE, kex16.def
+	mark MEMORY kex16.exe

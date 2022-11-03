@@ -1,0 +1,4 @@
+dummy.fil:
+	command /c del *.exe
+	command /c del *.obj
+	command /c del *.map
