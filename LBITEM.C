@@ -20,6 +20,47 @@ typedef LBWND NEAR *NPLBWND;
 NPLBWND lbList = NULL;
 
 /**
+	onLBMessage: Handles calls to manage a ListBox's ITEMDATA
+	Params:
+		hWnd - the HWND of the ListBox
+		message - the window message associated with this call
+		wParam - miscellaneous WORD providing more information
+		lParam - miscellaneous DWORD providing more information
+*/
+void NEAR PASCAL onLBMessage(hWnd, message, wParam, lParam)
+HWND hWnd;
+unsigned message;
+WORD wParam;
+LONG lParam;
+{
+
+	/* What does this message want? */
+	switch(message) {
+		case LB_GETITEMDATA:
+
+			/* Get the new return value from the ITEMDATA */
+			newWndProcRet = onLBGetItemData(hWnd, wParam);
+
+			/* Hook DefWindowProc and make it return that value */
+			hookedDWP = HookProc(winMods[USER], "DefWindowProc", DWPWithData, NULL);
+			break;
+
+		case LB_SETITEMDATA:
+
+			/* Set the specified value in the ITEMDATA */
+			onLBSetItemData(hWnd, wParam, lParam);
+
+			break;
+
+		case WM_DESTROY:
+
+			/* Delete all ITEMDATA for this ListBox */
+			onWMDestroyLB(hWnd);
+			break;
+	}
+}
+
+/**
 	onLBGetItemData: Retrieves ListBox item data that was previously set
 	Params:
 		hWnd - the HWND of the ListBox

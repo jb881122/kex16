@@ -85,6 +85,7 @@ void NEAR PASCAL OFInit(void);
 
 /* Begin LB_*ITEMDATA-specific defs */
 
+void NEAR PASCAL onLBMessage(HWND, unsigned, WORD, LONG);
 long NEAR PASCAL onLBGetItemData(HWND, WORD);
 void NEAR PASCAL onLBSetItemData(HWND, WORD, LONG);
 void NEAR PASCAL onWMDestroyLB(HWND);
@@ -109,6 +110,10 @@ NUM_MODS equ ((size MODNAME) shr 1)
 externNP _winMods		;*/ extern HANDLE winMods[NUM_MODS]; /*
 winMods equ _winMods
 if 0 ;*/
+
+extern FARPROC DWPWithData;
+extern WORD hookedDWP;
+extern long newWndProcRet;
 
 long FAR PASCAL __new_DefWindowProc(HWND, unsigned, WORD, LONG);
 typedef long (FAR PASCAL *DWPPROC)(HWND, unsigned, WORD, LONG);

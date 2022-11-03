@@ -55,44 +55,24 @@ int    nCode;
 WORD   wParam;
 DWORD  lParam;
 {
-	/* If a DefWindowProc hook was already made, get rid of it */
-	if(hookedDWP) {
-		UnhookProc(hookedDWP);
-		hookedDWP = 0;
-	}
 
 	/* Are we looking at a valid message? */
 	if (nCode >= 0 && lParam) {
 
 		/* Yes, call the specialized code if it's anything we should do something with */
-		if(((LPCWPSTRUCT)lParam)->message == LB_GETITEMDATA
-				|| ((LPCWPSTRUCT)lParam)->message == LB_SETITEMDATA
-				|| ((LPCWPSTRUCT)lParam)->message == WM_DESTROY) {
-
-			/* See if it's a ListBox */
-			GetClassName(((LPCWPSTRUCT)lParam)->hWnd, wndClassName, sizeof(wndClassName));
-			if(!strcmp(wndClassName, "ListBox")) {
-
-				/* Yep, call the ITEMDATA functions */
-				switch(((LPCWPSTRUCT)lParam)->message) {
-					case LB_GETITEMDATA:
-						newWndProcRet = onLBGetItemData(
-								((LPCWPSTRUCT)lParam)->hWnd,
-								((LPCWPSTRUCT)lParam)->wParam);
-						hookedDWP = HookProc(winMods[USER], "DefWindowProc", DWPWithData, NULL);
-						break;
-					case LB_SETITEMDATA:
-						onLBSetItemData(
-								((LPCWPSTRUCT)lParam)->hWnd,
-								((LPCWPSTRUCT)lParam)->wParam,
-								((LPCWPSTRUCT)lParam)->lParam);
-						break;
-					case WM_DESTROY:
-						onWMDestroyLB(
-								((LPCWPSTRUCT)lParam)->hWnd);
-						break;
+		switch(((LPCWPSTRUCT)lParam)->message) {
+			case LB_GETITEMDATA:
+			case LB_SETITEMDATA:
+			case WM_DESTROY:
+				GetClassName(((LPCWPSTRUCT)lParam)->hWnd, wndClassName, sizeof(wndClassName));
+				if(!strcmp(wndClassName, "ListBox")) {
+					onLBMessage(
+							((LPCWPSTRUCT)lParam)->hWnd,
+							((LPCWPSTRUCT)lParam)->message,
+							((LPCWPSTRUCT)lParam)->wParam,
+							((LPCWPSTRUCT)lParam)->lParam);
 				}
-			}
+				break;
 		}
 	}
 
