@@ -10,6 +10,7 @@ FARPROC DWPWithData = NULL;
 WORD hookedDWP = 0;
 long newWndProcRet;
 HANDLE winMods[NUM_MODS];
+char wndClassName[8];
 
 /* Make sure this is kept updated with the enum in KEX16.H */
 char *winModNames[] = {
@@ -64,23 +65,34 @@ DWORD  lParam;
 	if (nCode >= 0 && lParam) {
 
 		/* Yes, call the specialized code if it's anything we should do something with */
-		switch(((LPCWPSTRUCT)lParam)->message) {
-			case LB_GETITEMDATA:
-				newWndProcRet = onLBGetItemData(
-						((LPCWPSTRUCT)lParam)->hWnd,
-						((LPCWPSTRUCT)lParam)->wParam);
-				hookedDWP = HookProc(winMods[USER], "DefWindowProc", DWPWithData, NULL);
-				break;
-			case LB_SETITEMDATA:
-				onLBSetItemData(
-						((LPCWPSTRUCT)lParam)->hWnd,
-						((LPCWPSTRUCT)lParam)->wParam,
-						((LPCWPSTRUCT)lParam)->lParam);
-				break;
-			case WM_DESTROY:
-				onWMDestroyLB(
-						((LPCWPSTRUCT)lParam)->hWnd);
-				break;
+		if(((LPCWPSTRUCT)lParam)->message == LB_GETITEMDATA
+				|| ((LPCWPSTRUCT)lParam)->message == LB_SETITEMDATA
+				|| ((LPCWPSTRUCT)lParam)->message == WM_DESTROY) {
+
+			/* See if it's a ListBox */
+			GetClassName(((LPCWPSTRUCT)lParam)->hWnd, wndClassName, sizeof(wndClassName));
+			if(!strcmp(wndClassName, "ListBox")) {
+
+				/* Yep, call the ITEMDATA functions */
+				switch(((LPCWPSTRUCT)lParam)->message) {
+					case LB_GETITEMDATA:
+						newWndProcRet = onLBGetItemData(
+								((LPCWPSTRUCT)lParam)->hWnd,
+								((LPCWPSTRUCT)lParam)->wParam);
+						hookedDWP = HookProc(winMods[USER], "DefWindowProc", DWPWithData, NULL);
+						break;
+					case LB_SETITEMDATA:
+						onLBSetItemData(
+								((LPCWPSTRUCT)lParam)->hWnd,
+								((LPCWPSTRUCT)lParam)->wParam,
+								((LPCWPSTRUCT)lParam)->lParam);
+						break;
+					case WM_DESTROY:
+						onWMDestroyLB(
+								((LPCWPSTRUCT)lParam)->hWnd);
+						break;
+				}
+			}
 		}
 	}
 
