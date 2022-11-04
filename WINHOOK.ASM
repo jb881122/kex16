@@ -57,8 +57,10 @@ assumes ds,Data
 ;
 cProc HookInit,<NEAR,PUBLIC,WIN,PASCAL>,<>
 cBegin
+	; Get the KERNEL module handle
 	mov ax,word ptr [winMods].KERNEL
 
+	; Does AllocCStoDSAlias exist here?
 	push ax
 	mov bx,offset ACDAName
 	cCall GetProcAddress,<ax,ds,bx>
@@ -66,15 +68,18 @@ cBegin
 	or cx,dx
 	jz HI_noACDA
 
+	; Yes, copy the proc. address where we will reference it
 	mov word ptr AllocCStoDSAlias+2,dx
 	mov word ptr AllocCStoDSAlias,ax
 	jmp short HI_contACDA
 
+	; No, just use our dummy function instead
 HI_noACDA:
 	push cs
 	pop word ptr AllocCStoDSAlias+2
 	mov word ptr AllocCStoDSAlias,offset CodeDataDummy
 
+	; Does AllocDStoCSAlias exist here?
 HI_contACDA:
 	pop ax
 	push ax
@@ -84,15 +89,18 @@ HI_contACDA:
 	or cx,dx
 	jz HI_noADCA
 
+	; Yes, copy the proc. address where we will reference it
 	mov word ptr AllocDStoCSAlias+2,dx
 	mov word ptr AllocDStoCSAlias,ax
 	jmp short HI_contADCA
 
+	; No, just use our dummy function instead
 HI_noADCA:
 	push cs
 	pop word ptr AllocDStoCSAlias+2
 	mov word ptr AllocDStoCSAlias,offset CodeDataDummy
 
+	; Does FreeSelector exist here?
 HI_contADCA:
 	pop ax
 	mov bx,offset FSName
@@ -101,15 +109,18 @@ HI_contADCA:
 	or cx,dx
 	jz HI_noFS
 
+	; Yes, copy the proc. address where we will reference it
 	mov word ptr FreeSelector+2,dx
 	mov word ptr FreeSelector,ax
 	jmp short HI_contFS
 
+	; No, just use our dummy function instead
 HI_noFS:
 	push cs
 	pop word ptr FreeSelector+2
 	mov word ptr FreeSelector,offset CodeDataDummy
 
+	; Allocate the selector allowing us to execute code from the data segment
 HI_contFS:
 	cCall AllocDStoCSAlias,<ds>
 	mov DataToCode,ax
@@ -144,10 +155,10 @@ HP_gotProcAddr:
 	; Now start allocating space for the hook
 	mov si,1
 	mov bx,HookList
-
 	or bx,bx
 	jz HP_noHooksYet
 
+	; Other hooks exist, find first available hook ID
 	cCall ll_getfirst,<bx>
 	mov bx,ax
 HP_firstSpotLoop:
@@ -160,23 +171,28 @@ HP_firstSpotLoop:
 	mov bx,ax
 	jmp short HP_firstSpotLoop
 
+	; In case something fails while the proc. address is still on the stack
 HP_exitPop2:
 	pop dx
 	pop dx
 	jmp short HP_exit
 
+	; First available ID is after the end, append to the list
 HP_foundLast:
 	cCall ll_append,<bx>
 	jmp short HP_foundCalled
 
+	; Otherwise, we're already past that available ID, so prepend to the later hook
 HP_foundSpot:
 	cCall ll_prepend,<bx>
 
+	; Success creating the list element?
 HP_foundCalled:
 	or ax,ax
 	jz HP_exitPop2
 	jmp short HP_spotCont
 
+	; No list of hooks right now, create a new one
 HP_noHooksYet:
 	mov ax,size HOOKSTRUC
 	cCall ll_create,<ax>
@@ -252,10 +268,12 @@ cEnd
 cProc UnhookProc,<NEAR,PUBLIC,WIN,PASCAL>,<si,di>
 	parmW hookedProc
 cBegin
+	; Get the first hook in the list
 	mov bx,HookList
 	mov si,hookedProc
 	cCall ll_getfirst,<bx>
 
+	; Iterate through the list until we find the hook or pass it (list is sorted)
 UP_loop:
 	or ax,ax
 	jz UP_exit
@@ -266,6 +284,7 @@ UP_loop:
 	cCall ll_getnext,<bx>
 	jmp short UP_loop
 
+	; Restore the original bytes at the procedure location
 UP_found:
 	lea si,[bx].CodeBytes
 	les di,dword ptr [bx].ProcOff
@@ -273,9 +292,12 @@ UP_found:
 	mov cx,patchSize
 	rep movsb
 
+	; Free the selector allowing us to patch that code
 	push bx
 	cCall FreeSelector,<[bx].ProcSegData>
 	pop bx
+
+	; Get rid of the hook item from the list
 	cCall ll_remove,<bx>
 	mov HookList,ax
 
@@ -287,8 +309,10 @@ cEnd
 ;
 cProc HookCleanup,<NEAR,PUBLIC,WIN,PASCAL>,<>
 cBegin
+	; Free the selector that allowed us to execute code in the data segment
 	cCall FreeSelector,<DataToCode>
 
+	; Unhook any procedures that were left hooked
 HC_loop:
 	mov bx,HookList
 	or bx,bx
@@ -315,7 +339,7 @@ cEnd
 
 ;
 ;	CallOldProc: Switches back patched bytes to the original ones, calls the old procedure, and
-;			re-patches it
+;			re-patches it (not meant to be called directly)
 ;
 CallOldProc	proc far
 
