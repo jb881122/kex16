@@ -180,27 +180,23 @@ HP_exitPop2:
 	; First available ID is after the end, append to the list
 HP_foundLast:
 	cCall ll_append,<bx>
-	jmp short HP_foundCalled
+	jmp short HP_spotCont
 
 	; Otherwise, we're already past that available ID, so prepend to the later hook
 HP_foundSpot:
 	cCall ll_prepend,<bx>
-
-	; Success creating the list element?
-HP_foundCalled:
-	or ax,ax
-	jz HP_exitPop2
 	jmp short HP_spotCont
 
 	; No list of hooks right now, create a new one
 HP_noHooksYet:
 	mov ax,size HOOKSTRUC
 	cCall ll_create,<ax>
-	or ax,ax
-	jz HP_exitPop2
 	mov HookList,ax
 
+	; Success creating the list element?
 HP_spotCont:
+	or ax,ax
+	jz HP_exitPop2
 	mov bx,ax
 
 	; Start populating the HOOKSTRUC object we have
