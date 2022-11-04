@@ -41,6 +41,7 @@ typedef CWPSTRUCT FAR *LPCWPSTRUCT;
 void NEAR PASCAL HookInit(void);
 WORD NEAR PASCAL HookProc(HANDLE, LPSTR, FARPROC, FARPROC FAR *);
 void NEAR PASCAL UnhookProc(WORD);
+void NEAR PASCAL HookCleanup(void);
 
 /* End WinAPI hooker defs */
 

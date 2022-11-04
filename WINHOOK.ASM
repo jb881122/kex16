@@ -111,6 +111,8 @@ HI_noFS:
 	mov word ptr FreeSelector,offset CodeDataDummy
 
 HI_contFS:
+	cCall AllocDStoCSAlias,<ds>
+	mov DataToCode,ax
 cEnd
 
 ;
@@ -181,10 +183,6 @@ HP_noHooksYet:
 	or ax,ax
 	jz HP_exitPop2
 	mov HookList,ax
-	push ax
-	cCall AllocDStoCSAlias,<ds>
-	mov DataToCode,ax
-	pop ax
 
 HP_spotCont:
 	mov bx,ax
@@ -275,10 +273,30 @@ UP_found:
 	mov cx,patchSize
 	rep movsb
 
+	push bx
+	cCall FreeSelector,<[bx].ProcSegData>
+	pop bx
 	cCall ll_remove,<bx>
 	mov HookList,ax
 
 UP_exit:
+cEnd
+
+;
+;	HookCleanup: Unhooks all hooks and frees anything allocated
+;
+cProc HookCleanup,<NEAR,PUBLIC,WIN,PASCAL>,<>
+cBegin
+	cCall FreeSelector,<DataToCode>
+
+HC_loop:
+	mov bx,HookList
+	or bx,bx
+	jz HC_exit
+	cCall UnhookProc,<[bx].HookID>
+	jmp short HC_loop
+
+HC_exit:
 cEnd
 
 ;

@@ -154,6 +154,7 @@ getOut:
 
 	/* Make sure specialized code can clean itself up */
 	LBCleanup();
+	HookCleanup();
 
 	/* Then clean up everything that this file's code may have done */
 	if(hookedDWP) {
