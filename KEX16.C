@@ -157,9 +157,6 @@ getOut:
 	HookCleanup();
 
 	/* Then clean up everything that this file's code may have done */
-	if(hookedDWP) {
-		UnhookProc(hookedDWP);
-	}
 	if(DWPWithData) {
 		FreeProcInstance(DWPWithData);
 	}
